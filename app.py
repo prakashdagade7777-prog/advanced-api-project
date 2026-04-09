@@ -3,6 +3,7 @@ import sqlite3
 
 app = Flask(__name__)
 
+# Database init
 def init_db():
     conn = sqlite3.connect("database.db")
     cursor = conn.cursor()
@@ -18,6 +19,12 @@ def init_db():
 
 init_db()
 
+# ✅ Home route (IMPORTANT - 404 fix)
+@app.route("/")
+def home():
+    return "API Running Successfully 🚀"
+
+# ✅ GET all tasks
 @app.route("/tasks", methods=["GET"])
 def get_tasks():
     conn = sqlite3.connect("database.db")
@@ -29,17 +36,23 @@ def get_tasks():
     data = [{"id": r[0], "name": r[1], "task": r[2]} for r in rows]
     return jsonify(data)
 
+# ✅ POST add task
 @app.route("/add", methods=["POST"])
 def add_task():
     data = request.json
+
     conn = sqlite3.connect("database.db")
     cursor = conn.cursor()
-    cursor.execute("INSERT INTO tasks (name, task) VALUES (?, ?)", (data["name"], data["task"]))
+    cursor.execute(
+        "INSERT INTO tasks (name, task) VALUES (?, ?)",
+        (data["name"], data["task"])
+    )
     conn.commit()
     conn.close()
 
-    return jsonify({"message": "Task added"})
+    return jsonify({"message": "Task added successfully"})
 
+# ✅ DELETE task
 @app.route("/delete/<int:id>", methods=["DELETE"])
 def delete_task(id):
     conn = sqlite3.connect("database.db")
@@ -48,10 +61,8 @@ def delete_task(id):
     conn.commit()
     conn.close()
 
-    return jsonify({"message": "Task deleted"})
+    return jsonify({"message": "Task deleted successfully"})
 
+# Run server
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=3000)
-    @app.route("/")
-def home():
-    return "Advanced API is running 🚀"
