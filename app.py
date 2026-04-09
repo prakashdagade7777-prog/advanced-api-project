@@ -3,10 +3,19 @@ import sqlite3
 
 app = Flask(__name__)
 
-# Database init
+# DB init
 def init_db():
     conn = sqlite3.connect("database.db")
     cursor = conn.cursor()
+
+    cursor.execute("""
+    CREATE TABLE IF NOT EXISTS users (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        username TEXT,
+        password TEXT
+    )
+    """)
+
     cursor.execute("""
     CREATE TABLE IF NOT EXISTS tasks (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -14,17 +23,53 @@ def init_db():
         task TEXT
     )
     """)
+
     conn.commit()
     conn.close()
 
 init_db()
 
-# ✅ Home route (IMPORTANT - 404 fix)
+# Home
 @app.route("/")
 def home():
-    return "API Running Successfully 🚀"
+    return "API Running 🚀"
 
-# ✅ GET all tasks
+# Register
+@app.route("/register", methods=["POST"])
+def register():
+    data = request.json
+
+    conn = sqlite3.connect("database.db")
+    cursor = conn.cursor()
+    cursor.execute(
+        "INSERT INTO users (username, password) VALUES (?, ?)",
+        (data["username"], data["password"])
+    )
+    conn.commit()
+    conn.close()
+
+    return jsonify({"message": "User registered"})
+
+# Login
+@app.route("/login", methods=["POST"])
+def login():
+    data = request.json
+
+    conn = sqlite3.connect("database.db")
+    cursor = conn.cursor()
+    cursor.execute(
+        "SELECT * FROM users WHERE username=? AND password=?",
+        (data["username"], data["password"])
+    )
+    user = cursor.fetchone()
+    conn.close()
+
+    if user:
+        return jsonify({"message": "Login successful"})
+    else:
+        return jsonify({"message": "Invalid credentials"})
+
+# Get tasks
 @app.route("/tasks", methods=["GET"])
 def get_tasks():
     conn = sqlite3.connect("database.db")
@@ -36,7 +81,7 @@ def get_tasks():
     data = [{"id": r[0], "name": r[1], "task": r[2]} for r in rows]
     return jsonify(data)
 
-# ✅ POST add task
+# Add task
 @app.route("/add", methods=["POST"])
 def add_task():
     data = request.json
@@ -50,9 +95,9 @@ def add_task():
     conn.commit()
     conn.close()
 
-    return jsonify({"message": "Task added successfully"})
+    return jsonify({"message": "Task added"})
 
-# ✅ DELETE task
+# Delete task
 @app.route("/delete/<int:id>", methods=["DELETE"])
 def delete_task(id):
     conn = sqlite3.connect("database.db")
@@ -61,8 +106,7 @@ def delete_task(id):
     conn.commit()
     conn.close()
 
-    return jsonify({"message": "Task deleted successfully"})
+    return jsonify({"message": "Task deleted"})
 
-# Run server
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=3000)
